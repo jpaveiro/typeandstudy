@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DigitaEstudo</title>
+<style>
+:root{
+  --bg:#0f1220;--panel:#171b2e;--panel2:#1f2440;--line:#2b3156;
+  --txt:#e6e8f2;--mute:#8b91b3;--pending:#5d6390;
+  --ok:#4ade80;--err:#f87171;--acc:#818cf8;--gold:#fbbf24;--blank:#38bdf8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:8px;padding:8px 14px}
+button:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#0f1220;font-weight:600}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select{font:inherit;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:18px;margin:0;margin-right:auto}
+header h1 span{color:var(--acc)}
+.badge{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;white-space:nowrap}
+.xpbar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--gold));transition:width .4s}
+main{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 8px;font-size:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1;min-width:160px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:13px;padding:4px 10px;border-radius:999px}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;background:transparent}
+.seg button.on{background:var(--acc);color:#0f1220;font-weight:600}
+.hint{font-size:12px;color:var(--mute);margin-top:4px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{flex:1;min-width:90px;background:var(--panel2);border-radius:10px;padding:8px 12px}
+.stat b{display:block;font-size:22px}
+.stat small{color:var(--mute);font-size:12px}
+#typebox{position:relative;font:20px/1.8 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;max-height:340px;overflow:auto;cursor:text;word-break:normal;overflow-wrap:break-word}
+#typebox.focus{border-color:var(--acc)}
+#typebox span{color:var(--pending);border-radius:3px}
+#typebox span.done{color:var(--txt)}
+#typebox span.cur{background:var(--acc);color:#0f1220}
+#typebox span.bad{background:var(--err);color:#0f1220;animation:shake .15s}
+#typebox span.blank{color:transparent;border-bottom:2px solid var(--blank)}
+#typebox span.blank.done{color:var(--blank);border-bottom-color:transparent}
+#typebox span.blank.peek{color:#38bdf866}
+#typebox span.blank.done.missed{color:var(--gold)}
+#typebox span.blank.cur{background:var(--blank);color:transparent}
+#typebox span.blank.cur.peek{color:#0f122088}
+@keyframes shake{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0f1220cc;color:var(--mute);font:15px system-ui;border-radius:12px}
+#hidden{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.combo{color:var(--gold)}
+.q{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.q p{margin:0 0 8px;font-weight:600}
+.opts{display:grid;gap:6px}
+.opts button{text-align:left}
+.opts button:disabled{opacity:1;cursor:default}
+.opts button.right{border-color:var(--ok);background:#4ade8022}
+.opts button.wrong{border-color:var(--err);background:#f8717122}
+.expl{font-size:13px;color:var(--mute);margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--mute);font-weight:500}
+.terms{display:flex;flex-wrap:wrap;gap:8px}
+.term{background:var(--panel2);border-radius:8px;padding:8px 10px;font-size:13px;flex:1 1 240px}
+.term b{color:var(--blank)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--gold);color:#0f1220;font-weight:700;padding:10px 18px;border-radius:10px;box-shadow:0 8px 24px #0008;animation:pop .3s}
+@keyframes pop{from{transform:translate(-50%,20px);opacity:0}}
+dialog{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:12px;max-width:440px;width:92%}
+dialog::backdrop{background:#000a}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:r .7s linear infinite;vertical-align:-2px}
+@keyframes r{to{transform:rotate(1turn)}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>Digita<span>Estudo</span></h1>
+  <span class="badge" id="hLevel">Nível 1</span>
+  <div class="xpbar" title="XP"><i id="hBar"></i></div>
+  <span class="badge" id="hXp">0 XP</span>
+  <span class="badge" id="hStreak">🔥 0</span>
+  <span class="badge" id="hGoal">Meta 0/3</span>
+  <button id="btnSettings" title="Configurações">⚙</button>
+</header>
+
+<main>
+  <!-- HOME -->
+  <section id="home">
+    <div class="card">
+      <h2>O que vamos estudar?</h2>
+      <div class="row">
+        <div>
+          <label>Disciplina</label>
+          <select id="subject"></select>
+        </div>
+        <div>
+          <label>Dificuldade</label>
+          <select id="difficulty">
+            <option value="introdutório">Introdutório</option>
+            <option value="intermediário" selected>Intermediário</option>
+            <option value="avançado">Avançado (nível prova)</option>
+          </select>
+        </div>
+        <div>
+          <label>Tamanho</label>
+          <select id="length">
+            <option value="60">Curto (~60 palavras)</option>
+            <option value="100" selected>Médio (~100 palavras)</option>
+            <option value="160">Longo (~160 palavras)</option>
+          </select>
+        </div>
+      </div>
+      <label>Tema</label>
+      <input id="topic" placeholder="Ex.: relações de recorrência lineares homogêneas">
+      <div class="chips" id="chips"></div>
+      <label>Modo</label>
+      <div class="seg" id="modeSeg">
+        <button data-mode="copy">Cópia</button>
+        <button data-mode="recall" class="on">Recall (lacunas)</button>
+      </div>
+      <div class="hint" id="modeHint"></div>
+      <div class="row" style="margin-top:16px">
+        <button class="primary" id="btnStart">Gerar texto e começar</button>
+        <button id="btnReview">Revisar conceitos</button>
+      </div>
+      <div class="hint" id="genStatus"></div>
+    </div>
+
+    <div class="card" id="historyCard" hidden>
+      <h2>Últimas sessões</h2>
+      <table><thead><tr><th>Data</th><th>Tema</th><th>PPM</th><th>Precisão</th><th>XP</th></tr></thead><tbody id="history"></tbody></table>
+    </div>
+
+    <div class="card" id="deckCard" hidden>
+      <h2>Seus conceitos</h2>
+      <div class="hint" id="deckSummary"></div>
+    </div>
+  </section>
+
+  <!-- PLAY -->
+  <section id="play" hidden>
+    <div class="row" style="align-items:center;margin-bottom:10px">
+      <div><b id="lessonTitle"></b><div class="hint" id="lessonMeta"></div></div>
+      <div style="flex:0 0 auto"><button id="btnQuit">Sair</button></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><small>PPM</small><b id="sWpm">0</b></div>
+      <div class="stat"><small>Precisão</small><b id="sAcc">100%</b></div>
+      <div class="stat"><small>Combo</small><b id="sCombo" class="combo">0</b></div>
+      <div class="stat"><small>Tempo</small><b id="sTime">0:00</b></div>
+      <div class="stat"><small>XP</small><b id="sXp">0</b></div>
+    </div>
+    <div id="typebox"><div id="text"></div><div id="overlay">Clique aqui e comece a digitar</div></div>
+    <input id="hidden" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="hint" id="playHint"></div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result" hidden>
+    <div class="card">
+      <h2>Resultado</h2>
+      <div class="stats" id="resStats"></div>
+      <div class="hint" id="resXp"></div>
+    </div>
+    <div class="card">
+      <h2>Conceitos-chave</h2>
+      <div class="terms" id="resTerms"></div>
+    </div>
+    <div class="card">
+      <h2>Desafio rápido <span class="hint">(+15 XP por acerto)</span></h2>
+      <div id="quiz"></div>
+    </div>
+    <div class="row">
+      <button class="primary" id="btnNext">Próximo texto (mesmo tema)</button>
+      <button id="btnHome">Voltar ao início</button>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <h2 style="margin-top:0">Configurações</h2>
+  <label>Gemini API Key</label>
+  <input id="cfgKey" type="password" placeholder="AIza...">
+  <div class="hint">Fica salva apenas no localStorage deste navegador. Gere em aistudio.google.com/apikey. Opcional se você roda com <code>node server.js</code> e GEMINI_API_KEY no .env (o .env tem prioridade). Sem chave, o app usa textos de exemplo.</div>
+  <label>Modelo</label>
+  <input id="cfgModel" placeholder="gemini-2.5-flash">
+  <label style="display:flex;gap:8px;align-items:center;color:var(--txt)"><input id="cfgAccents" type="checkbox" style="width:auto"> Ignorar acentos ao comparar</label>
+  <div class="row" style="margin-top:18px">
+    <button id="cfgReset">Apagar progresso</button>
+    <button class="primary" id="cfgSave">Salvar</button>
+  </div>
+</dialog>
+
+<script>
+const SUBJECTS = {
+  ad: { name: 'Análise de Dados', topics: ['Média, mediana e moda', 'Variância e desvio padrão', 'Correlação x causalidade', 'Regressão linear simples', 'Outliers e boxplot', 'Limpeza de dados com pandas', 'Distribuição normal', 'Amostragem e viés'] },
+  md: { name: 'Matemática Discreta II', topics: ['Relações de recorrência lineares', 'Inclusão-exclusão', 'Funções geradoras', 'Caminhos e circuitos de Euler', 'Árvores geradoras', 'Coloração de grafos', 'Aritmética modular', 'Indução forte'] },
+  livre: { name: 'Livre', topics: [] },
+};
+const INTERVALS = [0, 1, 2, 4, 8, 16]; // dias por caixa de Leitner
+const DAILY_GOAL = 3;
+const KEY = 'digitaestudo.v1';
+
+const SAMPLES = {
+  ad: {
+    title: 'Média, mediana e outliers',
+    text: 'A media aritmetica soma todos os valores e divide pela quantidade de observacoes, por isso ela e sensivel a outliers. Se os salarios de uma equipe sao 3, 3, 4, 4 e 40 mil reais, a media fica em 10,8 mil, um valor que nao representa ninguem. Ja a mediana ordena os dados e pega o valor central, que aqui e 4 mil. Por esse motivo, em distribuicoes assimetricas, a mediana costuma descrever melhor o centro dos dados.',
+    keyTerms: [
+      { term: 'media aritmetica', definition: 'Soma dos valores dividida pela quantidade de observações.' },
+      { term: 'outliers', definition: 'Valores muito distantes do restante dos dados.' },
+      { term: 'mediana', definition: 'Valor central dos dados ordenados.' },
+      { term: 'assimetricas', definition: 'Distribuições com cauda mais longa para um dos lados.' },
+    ],
+    questions: [
+      { question: 'Em dados com um outlier muito alto, qual medida é mais robusta?', options: ['Média', 'Mediana', 'Soma', 'Amplitude'], answerIndex: 1, explanation: 'A mediana depende só da posição central, não da magnitude dos extremos.' },
+      { question: 'Qual a mediana de 7, 1, 9, 3, 5?', options: ['3', '5', '7', '5,2'], answerIndex: 1, explanation: 'Ordenando: 1, 3, 5, 7, 9. O valor central é 5.' },
+      { question: 'Se a média é bem maior que a mediana, a distribuição provavelmente é:', options: ['Simétrica', 'Assimétrica à esquerda', 'Assimétrica à direita', 'Uniforme'], answerIndex: 2, explanation: 'Valores altos puxam a média para a direita.' },
+    ],
+  },
+  md: {
+    title: 'Recorrências lineares homogêneas',
+    text: 'Uma relacao de recorrencia define cada termo a partir dos anteriores, como a(n) = 5*a(n-1) - 6*a(n-2). Para resolver, montamos a equacao caracteristica r^2 - 5r + 6 = 0, cujas raizes sao 2 e 3. A solucao geral fica a(n) = A*2^n + B*3^n, e as condicoes iniciais, como a(0) = 1 e a(1) = 4, determinam as constantes A e B. Esse metodo funciona porque toda combinacao linear de solucoes tambem e solucao.',
+    keyTerms: [
+      { term: 'relacao de recorrencia', definition: 'Regra que define um termo em função dos anteriores.' },
+      { term: 'equacao caracteristica', definition: 'Polinômio obtido ao supor a(n) = r^n.' },
+      { term: 'solucao geral', definition: 'Combinação linear das soluções básicas r^n.' },
+      { term: 'condicoes iniciais', definition: 'Valores conhecidos que fixam as constantes.' },
+      { term: 'combinacao linear', definition: 'Soma de soluções multiplicadas por constantes.' },
+    ],
+    questions: [
+      { question: 'Quais as raízes da equação característica de a(n) = 5a(n-1) - 6a(n-2)?', options: ['1 e 6', '2 e 3', '-2 e -3', '5 e 6'], answerIndex: 1, explanation: 'r^2 - 5r + 6 = (r-2)(r-3).' },
+      { question: 'Com a(0)=1 e a(1)=4, quanto vale B em a(n)=A*2^n + B*3^n?', options: ['1', '2', '-1', '3'], answerIndex: 1, explanation: 'A+B=1 e 2A+3B=4, logo B=2 e A=-1.' },
+      { question: 'Se a equação característica tem raiz dupla r, a solução geral é:', options: ['A*r^n', '(A + B)*r^n', '(A + B*n)*r^n', 'A*r^n + B*r^(n-1)'], answerIndex: 2, explanation: 'Raiz com multiplicidade 2 gera os termos r^n e n*r^n.' },
+    ],
+  },
+};
+SAMPLES.livre = SAMPLES.md;
+
+// ---------- estado ----------
+const today = () => new Date().toLocaleDateString('sv-SE');
+const addDays = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('sv-SE'); };
+const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+const norm = s => fold(s).toLowerCase().trim();
+
+function load() {
+  const base = { xp: 0, streak: { last: null, count: 0 }, sessions: [], concepts: {}, settings: { apiKey: '', model: 'gemini-2.5-flash', ignoreAccents: true } };
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY)) || {};
+    return { ...base, ...s, settings: { ...base.settings, ...s.settings } };
+  } catch { return base; }
+}
+let state = load();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+
+const levelOf = xp => Math.floor(Math.sqrt(xp / 40)) + 1;
+const xpForLevel = l => 40 * (l - 1) ** 2;
+
+const $ = id => document.getElementById(id);
+function show(id) { for (const s of ['home', 'play', 'result']) $(s).hidden = s !== id; }
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
+}
+
+function renderHeader() {
+  const l = levelOf(state.xp), a = xpForLevel(l), b = xpForLevel(l + 1);
+  $('hLevel').textContent = 'Nível ' + l;
+  $('hBar').style.width = ((state.xp - a) / (b - a) * 100) + '%';
+  $('hXp').textContent = state.xp + ' XP';
+  const alive = state.streak.last === today() || state.streak.last === addDays(today(), -1);
+  $('hStreak').textContent = '🔥 ' + (alive ? state.streak.count : 0);
+  const done = state.sessions.filter(s => s.date === today()).length;
+  $('hGoal').textContent = `Meta ${Math.min(done, DAILY_GOAL)}/${DAILY_GOAL}` + (done >= DAILY_GOAL ? ' ✓' : '');
+}
+
+function dueConcepts() { return Object.values(state.concepts).filter(c => c.due <= today()); }
+
+function renderHome() {
+  renderHeader();
+  const due = dueConcepts().length;
+  $('btnReview').textContent = `Revisar conceitos (${due} pendente${due === 1 ? '' : 's'})`;
+  $('btnReview').disabled = due === 0;
+
+  const hist = state.sessions.slice(-8).reverse();
+  $('historyCard').hidden = !hist.length;
+  $('history').replaceChildren(...hist.map(s => {
+    const tr = document.createElement('tr');
+    for (const v of [s.date.slice(5).split('-').reverse().join('/'), s.topic, s.wpm, s.acc + '%', '+' + s.xp]) {
+      const td = document.createElement('td'); td.textContent = v; tr.appendChild(td);
+    }
+    return tr;
+  }));
+
+  const all = Object.values(state.concepts);
+  $('deckCard').hidden = !all.length;
+  const mastered = all.filter(c => c.box >= 4).length;
+  $('deckSummary').textContent = `${all.length} conceitos vistos · ${mastered} dominados (caixa 4+) · ${due} para revisar hoje`;
+}
+
+// ---------- home ----------
+let mode = 'recall';
+const MODE_HINT = {
+  copy: 'Você digita o texto inteiro vendo tudo. Bom para o primeiro contato com o tema.',
+  recall: 'Os conceitos-chave ficam ocultos: você precisa lembrar e digitá-los. Erre 2x e aparece uma dica. Vale mais XP e fixa muito mais.',
+};
+function setMode(m) {
+  mode = m;
+  for (const b of $('modeSeg').children) b.classList.toggle('on', b.dataset.mode === m);
+  $('modeHint').textContent = MODE_HINT[m];
+}
+$('modeSeg').onclick = e => e.target.dataset.mode && setMode(e.target.dataset.mode);
+
+$('subject').append(...Object.entries(SUBJECTS).map(([k, v]) => new Option(v.name, k)));
+function renderChips() {
+  $('chips').replaceChildren(...SUBJECTS[$('subject').value].topics.map(t => {
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = t;
+    b.onclick = () => { $('topic').value = t; };
+    return b;
+  }));
+}
+$('subject').onchange = renderChips;
+
+// ---------- Gemini ----------
+const SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    title: { type: 'STRING' },
+    text: { type: 'STRING' },
+    keyTerms: { type: 'ARRAY', items: { type: 'OBJECT', properties: { term: { type: 'STRING' }, definition: { type: 'STRING' } }, required: ['term', 'definition'] } },
+    questions: { type: 'ARRAY', items: { type: 'OBJECT', properties: { question: { type: 'STRING' }, options: { type: 'ARRAY', items: { type: 'STRING' } }, answerIndex: { type: 'INTEGER' }, explanation: { type: 'STRING' } }, required: ['question', 'options', 'answerIndex', 'explanation'] } },
+  },
+  required: ['title', 'text', 'keyTerms', 'questions'],
+};
+
+function buildPrompt({ subjectName, topic, difficulty, words, focus, avoid }) {
+  return `Você é professor(a) de ${subjectName} no curso de Ciência da Computação da Universidade Presbiteriana Mackenzie.
+${focus
+    ? `Escreva um texto didático que conecte e reforce estes conceitos (use cada termo LITERALMENTE no texto):\n${focus.map(c => `- ${c.term}: ${c.def}`).join('\n')}\nEm keyTerms, devolva exatamente esses termos.`
+    : `Escreva um texto didático sobre: "${topic}".`}
+Nível: ${difficulty}. Tamanho: cerca de ${words} palavras, em um único parágrafo, português do Brasil.
+O texto será DIGITADO pelo aluno, então:
+- Use só caracteres de um teclado ABNT2. Proibido: aspas curvas, travessão, reticências unicode, letras gregas, símbolos como ≤ ≥ ≠ × ∑ √ ∈.
+- Notação matemática em ASCII: a(n) = 2*a(n-1) + 1, x^2, C(n,k), sqrt(x), <=, >=, !=, mod.
+- Explique o PORQUÊ, não só o quê, e inclua um exemplo numérico ou concreto curto.
+keyTerms: 4 a 6 termos (1 a 3 palavras) que aparecem LITERALMENTE no texto, com definição curta.
+questions: 3 questões de múltipla escolha com 4 alternativas, exigindo aplicação ou compreensão (não cópia de frase do texto). answerIndex começa em 0.${avoid?.length ? `\nNão repita estes textos anteriores: ${avoid.join('; ')}.` : ''}`;
+}
+
+// Rodando via `node server.js`, a chave vem do .env e as chamadas passam pelo servidor.
+let server = { hasKey: false, model: null };
+const serverReady = location.protocol.startsWith('http')
+  ? fetch('/api/config').then(r => r.ok ? r.json() : server).then(c => { server = c; }).catch(() => {})
+  : Promise.resolve();
+const hasKey = () => server.hasKey || !!state.settings.apiKey;
+
+async function generate(opts) {
+  await serverReady;
+  const { apiKey } = state.settings;
+  if (!hasKey()) return structuredClone(SAMPLES[opts.subject] || SAMPLES.md);
+  const model = state.settings.model || server.model || 'gemini-2.5-flash';
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: buildPrompt(opts) }] }],
+    generationConfig: { temperature: 0.9, responseMimeType: 'application/json', responseSchema: SCHEMA },
+  };
+  const res = server.hasKey
+    ? await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model, body }) })
+    : await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+    });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error?.message || 'HTTP ' + res.status);
+  const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('');
+  if (!raw) throw new Error('Resposta vazia do Gemini');
+  return JSON.parse(raw);
+}
+
+function sanitize(s) {
+  return s
+    .replace(/[‘’´`]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—−]/g, '-').replace(/…/g, '...')
+    .replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/≠/g, '!=')
+    .replace(/[×⋅]/g, '*').replace(/÷/g, '/').replace(/→/g, '->')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// ---------- sessão ----------
+let lesson = null, run = null, timer = null;
+
+async function startLesson(opts) {
+  const btns = [$('btnStart'), $('btnReview'), $('btnNext')];
+  btns.forEach(b => b.disabled = true);
+  $('genStatus').innerHTML = '<span class="spin"></span> Gerando texto...';
+  try {
+    const data = await generate(opts);
+    lesson = {
+      ...opts,
+      title: data.title,
+      text: sanitize(data.text),
+      keyTerms: (data.keyTerms || []).map(k => ({ term: sanitize(k.term), definition: k.definition })),
+      questions: (data.questions || []).filter(q => q.options?.length >= 2),
+    };
+    $('genStatus').textContent = hasKey() ? '' : 'Sem API key: usando texto de exemplo. Configure em ⚙.';
+    beginTyping();
+  } catch (e) {
+    $('genStatus').textContent = 'Erro: ' + e.message;
+    show('home');
+  } finally {
+    btns.forEach(b => b.disabled = false);
+    renderHome();
+  }
+}
+
+function currentOpts() {
+  const subject = $('subject').value;
+  const topic = $('topic').value.trim() || SUBJECTS[subject].topics[0] || 'tema livre';
+  return { subject, subjectName: SUBJECTS[subject].name, topic, difficulty: $('difficulty').value, words: +$('length').value, mode };
+}
+
+$('btnStart').onclick = () => {
+  if (!$('topic').value.trim() && $('subject').value === 'livre') return $('topic').focus();
+  startLesson(currentOpts());
+};
+$('btnReview').onclick = () => {
+  const due = dueConcepts().sort((a, b) => a.box - b.box || a.due.localeCompare(b.due)).slice(0, 5);
+  if (!due.length) return;
+  const subjectName = [...new Set(due.map(c => SUBJECTS[c.subject]?.name || c.subject))].join(' e ');
+  startLesson({ subject: due[0].subject, subjectName, topic: 'Revisão: ' + due.map(c => c.term).join(', '), difficulty: $('difficulty').value, words: +$('length').value, mode: 'recall', focus: due, review: true });
+};
+$('btnNext').onclick = () => {
+  const recent = state.sessions.filter(s => s.topic === lesson.topic).slice(-3).map(s => s.title);
+  startLesson({ ...lesson, focus: lesson.review ? lesson.focus : undefined, avoid: recent });
+};
+$('btnHome').onclick = () => { show('home'); renderHome(); };
+$('btnQuit').onclick = () => { clearInterval(timer); show('home'); renderHome(); };
+
+function beginTyping() {
+  const chars = [...lesson.text];
+  const blankOf = new Array(chars.length).fill(-1);
+  if (lesson.mode === 'recall') {
+    const hay = norm(lesson.text);
+    lesson.keyTerms.forEach((k, ti) => {
+      const needle = norm(k.term);
+      if (!needle) return;
+      let from = 0, i;
+      // primeira ocorrência que não sobrepõe outra lacuna e está em fronteira de palavra
+      while ((i = hay.indexOf(needle, from)) !== -1) {
+        const end = i + needle.length;
+        const edge = (j) => j < 0 || j >= hay.length || !/[a-z0-9]/.test(hay[j]);
+        if (edge(i - 1) && edge(end) && blankOf.slice(i, end).every(v => v === -1)) {
+          for (let j = i; j < end; j++) blankOf[j] = ti;
+          k.blanked = true;
+          break;
+        }
+        from = i + 1;
+      }
+    });
+  }
+  run = { chars, blankOf, pos: 0, correct: 0, errors: 0, combo: 0, maxCombo: 0, xpTyping: 0, errAt: {}, blankErr: {}, startedAt: 0, endedAt: 0 };
+
+  const frag = document.createDocumentFragment();
+  run.spans = chars.map((c, i) => {
+    const s = document.createElement('span');
+    s.textContent = c;
+    if (blankOf[i] !== -1) s.classList.add('blank');
+    frag.appendChild(s);
+    return s;
+  });
+  $('text').replaceChildren(frag);
+  run.spans[0].classList.add('cur');
+
+  $('lessonTitle').textContent = lesson.title;
+  $('lessonMeta').textContent = `${lesson.subjectName} · ${lesson.mode === 'recall' ? 'Recall' : 'Cópia'} · ${lesson.difficulty}`;
+  const nBlanks = lesson.keyTerms.filter(k => k.blanked).length;
+  $('playHint').textContent = lesson.mode === 'recall'
+    ? `${nBlanks} lacuna(s) azul(is): digite o conceito de memória. O tamanho da linha é a dica.`
+    : 'Digite exatamente o que aparece. Só avança com a tecla certa.';
+  updateStats();
+  show('play');
+  focusTyping();
+}
+
+const typebox = $('typebox'), hidden = $('hidden');
+function focusTyping() { hidden.value = ''; hidden.focus(); }
+typebox.onclick = focusTyping;
+hidden.onfocus = () => { $('overlay').hidden = true; typebox.classList.add('focus'); };
+hidden.onblur = () => { if (!$('play').hidden && run && !run.endedAt) { $('overlay').hidden = false; $('overlay').textContent = 'Pausado. Clique para continuar'; } typebox.classList.remove('focus'); };
+
+function flush() { const v = hidden.value; hidden.value = ''; for (const c of v) handleChar(c); }
+hidden.addEventListener('input', e => { if (!e.isComposing) flush(); });
+hidden.addEventListener('compositionend', flush);
+hidden.addEventListener('paste', e => e.preventDefault());
+hidden.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleChar(' '); } });
+
+function same(a, b) {
+  if (a === b) return true;
+  if (state.settings.ignoreAccents) return fold(a) === fold(b);
+  return false;
+}
+
+function handleChar(c) {
+  if (!run || run.endedAt) return;
+  if (!run.startedAt) { run.startedAt = performance.now(); timer = setInterval(updateStats, 250); }
+  const i = run.pos, span = run.spans[i], b = run.blankOf[i];
+  span.classList.remove('bad');
+  if (same(c, run.chars[i])) {
+    span.classList.remove('cur', 'peek');
+    span.classList.add('done');
+    if (b !== -1 && run.blankErr[b]) span.classList.add('missed');
+    run.correct++;
+    run.combo++;
+    run.maxCombo = Math.max(run.maxCombo, run.combo);
+    run.xpTyping += multiplier() / 5;
+    run.pos++;
+    if (run.pos >= run.chars.length) return finish();
+    run.spans[run.pos].classList.add('cur');
+    run.spans[run.pos].scrollIntoView({ block: 'nearest' });
+  } else {
+    run.errors++;
+    run.combo = 0;
+    run.errAt[i] = (run.errAt[i] || 0) + 1;
+    if (b !== -1) {
+      run.blankErr[b] = (run.blankErr[b] || 0) + 1;
+      if (run.errAt[i] >= 2) span.classList.add('peek');
+    }
+    void span.offsetWidth; // reinicia a animação
+    span.classList.add('bad');
+  }
+  updateStats();
+}
+
+const multiplier = () => 1 + Math.min(3, Math.floor(run.combo / 40)) * 0.5;
+const elapsedMin = () => ((run.endedAt || performance.now()) - run.startedAt) / 60000;
+const wpm = () => run.startedAt ? Math.round(run.correct / 5 / Math.max(elapsedMin(), 1 / 60)) : 0;
+const accuracy = () => run.correct + run.errors ? run.correct / (run.correct + run.errors) : 1;
+
+function updateStats() {
+  $('sWpm').textContent = wpm();
+  $('sAcc').textContent = Math.round(accuracy() * 100) + '%';
+  $('sCombo').textContent = run.combo + (multiplier() > 1 ? ` ×${multiplier()}` : '');
+  const sec = run.startedAt ? Math.floor(elapsedMin() * 60) : 0;
+  $('sTime').textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+  $('sXp').textContent = Math.round(run.xpTyping * accuracy() ** 2);
+}
+
+function finish() {
+  run.endedAt = performance.now();
+  clearInterval(timer);
+  updateStats();
+  const acc = accuracy();
+  const typingXp = Math.round(run.xpTyping * acc ** 2);
+  const blanked = lesson.keyTerms.map((k, i) => ({ ...k, i })).filter(k => k.blanked);
+  const perfect = blanked.filter(k => !run.blankErr[k.i]);
+  const recallXp = perfect.length * 8 + (blanked.length - perfect.length) * 3;
+  const t = today();
+  const firstToday = !state.sessions.some(s => s.date === t);
+  const dailyXp = firstToday ? 20 : 0;
+
+  // streak
+  if (state.streak.last !== t) {
+    state.streak.count = state.streak.last === addDays(t, -1) ? state.streak.count + 1 : 1;
+    state.streak.last = t;
+  }
+
+  // repetição espaçada (Leitner)
+  lesson.keyTerms.forEach((k, i) => {
+    const existing = Object.entries(state.concepts).find(([, c]) => norm(c.term) === norm(k.term));
+    const id = existing ? existing[0] : lesson.subject + ':' + norm(k.term);
+    const c = existing ? existing[1] : { term: k.term, def: k.definition, subject: lesson.subject, box: 0 };
+    if (k.blanked) c.box = run.blankErr[i] ? 1 : Math.min(INTERVALS.length - 1, c.box + 1);
+    else if (!existing) c.box = 0;
+    c.due = addDays(t, k.blanked ? INTERVALS[c.box] : 1);
+    c.def = k.definition || c.def;
+    state.concepts[id] = c;
+  });
+
+  const session = { date: t, subject: lesson.subject, topic: lesson.topic, title: lesson.title, mode: lesson.mode, wpm: wpm(), acc: Math.round(acc * 100), xp: typingXp + recallXp + dailyXp };
+  state.sessions.push(session);
+  if (state.sessions.length > 200) state.sessions.splice(0, state.sessions.length - 200);
+  lesson.session = session;
+  addXp(session.xp);
+
+  // tela de resultado
+  const stat = (k, v) => { const d = document.createElement('div'); d.className = 'stat'; d.innerHTML = `<small></small><b></b>`; d.firstChild.textContent = k; d.lastChild.textContent = v; return d; };
+  $('resStats').replaceChildren(
+    stat('PPM', session.wpm), stat('Precisão', session.acc + '%'), stat('Maior combo', run.maxCombo),
+    stat('Lacunas certas', blanked.length ? `${perfect.length}/${blanked.length}` : '-'), stat('XP', '+' + session.xp),
+  );
+  $('resXp').textContent = `Digitação ${typingXp} · Recall ${recallXp}` + (dailyXp ? ` · Primeira sessão do dia ${dailyXp}` : '');
+
+  $('resTerms').replaceChildren(...lesson.keyTerms.map((k, i) => {
+    const d = document.createElement('div'); d.className = 'term';
+    const b = document.createElement('b'); b.textContent = k.term;
+    const mark = k.blanked ? (run.blankErr[i] ? ' ⟳ volta amanhã' : ' ✓') : '';
+    d.append(b, document.createTextNode(mark + ' · ' + k.definition));
+    return d;
+  }));
+
+  renderQuiz();
+  show('result');
+}
+
+function addXp(n) {
+  const before = levelOf(state.xp);
+  state.xp += n;
+  save();
+  renderHeader();
+  if (levelOf(state.xp) > before) toast(`Subiu para o nível ${levelOf(state.xp)}!`);
+}
+
+function renderQuiz() {
+  const box = $('quiz');
+  box.replaceChildren();
+  if (!lesson.questions.length) { box.textContent = 'Sem questões para este texto.'; return; }
+  lesson.questions.forEach(q => {
+    const wrap = document.createElement('div'); wrap.className = 'q';
+    const p = document.createElement('p'); p.textContent = q.question;
+    const opts = document.createElement('div'); opts.className = 'opts';
+    const expl = document.createElement('div'); expl.className = 'expl'; expl.hidden = true; expl.textContent = q.explanation;
+    q.options.forEach((o, oi) => {
+      const b = document.createElement('button'); b.textContent = String.fromCharCode(65 + oi) + ') ' + o;
+      b.onclick = () => {
+        [...opts.children].forEach((x, xi) => { x.disabled = true; if (xi === q.answerIndex) x.classList.add('right'); });
+        if (oi === q.answerIndex) { addXp(15); lesson.session.xp += 15; save(); }
+        else b.classList.add('wrong');
+        expl.hidden = false;
+      };
+      opts.appendChild(b);
+    });
+    wrap.append(p, opts, expl);
+    box.appendChild(wrap);
+  });
+}
+
+// ---------- configurações ----------
+$('btnSettings').onclick = () => {
+  $('cfgKey').value = state.settings.apiKey;
+  $('cfgModel').value = state.settings.model;
+  $('cfgAccents').checked = state.settings.ignoreAccents;
+  $('dlg').showModal();
+};
+$('cfgSave').onclick = () => {
+  state.settings.apiKey = $('cfgKey').value.trim();
+  state.settings.model = $('cfgModel').value.trim() || 'gemini-2.5-flash';
+  state.settings.ignoreAccents = $('cfgAccents').checked;
+  save(); $('dlg').close(); renderHome();
+};
+$('cfgReset').onclick = () => {
+  if (!confirm('Apagar XP, histórico e conceitos? (a API key é mantida)')) return;
+  state = { ...load(), xp: 0, streak: { last: null, count: 0 }, sessions: [], concepts: {} };
+  save(); $('dlg').close(); renderHome();
+};
+
+renderChips();
+setMode('recall');
+renderHome();
+</script>
+</body>
+</html>
